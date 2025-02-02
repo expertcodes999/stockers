@@ -1,6 +1,9 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, Enum as SQLAlchemyEnum
+import json
+import os
+from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean, Enum as SQLAlchemyEnum, DateTime
 from sqlalchemy.orm import relationship
-from ..database.database import Base, Country
+from database.database import Base, Country
+from datetime import datetime
 
 class Campaign(Base):
     __tablename__ = "campaigns"
@@ -9,7 +12,10 @@ class Campaign(Base):
     title = Column(String, nullable=False)
     landing_url = Column(String, nullable=False)
     is_running = Column(Boolean, default=False)
-    payouts = relationship("Payout", back_populates="campaign")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    country = Column(SQLAlchemyEnum(Country), nullable=False)
+    payouts = relationship("Payout", back_populates="campaign", cascade="all, delete-orphan")
 
 class Payout(Base):
     __tablename__ = "payouts"

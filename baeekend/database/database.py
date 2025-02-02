@@ -6,16 +6,34 @@ from enum import Enum
 from pydantic import BaseModel
 import json
 import os
+import logging
 
-# Load countries configuration
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 def load_countries():
-    with open(os.path.join(os.path.dirname(__file__), 'countries.json')) as f:
-        return json.load(f)['countries']
+    try:
+        filepath = os.path.join(os.path.dirname(__file__), 'countries.json')
+        logger.debug(f"Loading countries from: {filepath}")
+        
+        with open(filepath) as f:
+            data = json.load(f)
+            countries = data['countries']
+            logger.debug(f"Loaded {len(countries)} countries")
+            return countries
+    except Exception as e:
+        logger.error(f"Failed to load countries: {e}")
+        raise
 
+# Load countries first
 COUNTRIES_DATA = load_countries()
+logger.debug(f"Countries data loaded: {COUNTRIES_DATA[:2]}")  # Show first two countries
 
-# Create dynamic Country Enum
+# Create Country enum with initial member to prevent empty enum
 class Country(str, Enum):
+    # Add initial member
+    AFG = "AFG"
+    
     @classmethod
     def _missing_(cls, value):
         for country in COUNTRIES_DATA:
@@ -23,9 +41,14 @@ class Country(str, Enum):
                 return cls(value)
         raise ValueError(f"{value} is not a valid Country code")
 
-# Dynamically add country codes to the Enum
+# Add country codes to enum
 for country in COUNTRIES_DATA:
-    setattr(Country, country['COUNTRY_CODE'], country['COUNTRY_CODE'])
+    code = country['COUNTRY_CODE']
+    logger.debug(f"Adding country code: {code}")
+    if not hasattr(Country, code):
+        setattr(Country, code, code)
+
+logger.debug(f"Country enum members: {list(Country.__members__.keys())}")
 
 def get_country_details(country_code: str):
     """Get full country details by country code"""
@@ -34,11 +57,6 @@ def get_country_details(country_code: str):
          if country['COUNTRY_CODE'] == country_code),
         None
     )
-
-def get_currency_for_country(country_code: str):
-    """Get currency code for a country"""
-    country = get_country_details(country_code)
-    return country['CURRENCY_CODE'] if country else None
 
 # Database setup
 load_dotenv()

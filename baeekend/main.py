@@ -1,7 +1,9 @@
+import json
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database.database import engine, Base
-from .api.routes import router as campaign_router
+from database.database import engine, Base
+from api.routes import router as campaign_router
 
 app = FastAPI(title="Campaign Management API")
 
