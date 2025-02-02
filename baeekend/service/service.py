@@ -101,6 +101,22 @@ class CampaignService:
         db.commit()
         return True
 
+    def toggle_campaign(self, db: Session, campaign_id: int) -> Optional[Campaign]:
+        """Toggle campaign is_running status"""
+        db_campaign = self.get_campaign(db, campaign_id)
+        if not db_campaign:
+            raise ValueError("Campaign not found")
+            
+        db_campaign.is_running = not db_campaign.is_running
+        
+        try:
+            db.commit()
+            db.refresh(db_campaign)
+            return db_campaign
+        except Exception as e:
+            db.rollback()
+            raise ValueError(f"Error toggling campaign: {str(e)}")
+
 class PayoutService:
     def create_payout(self, db: Session, campaign_id: int, payout: PayoutCreate) -> Payout:
         if not payout.country:

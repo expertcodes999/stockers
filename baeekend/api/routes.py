@@ -78,7 +78,11 @@ def delete_campaign(campaign_id: int, db: Session = Depends(get_db)):
 
 @router.patch("/{campaign_id}/toggle", response_model=CampaignSchema)
 def toggle_campaign(campaign_id: int, db: Session = Depends(get_db)):
-    return campaign_service.toggle_campaign(db, campaign_id)
+    """Toggle campaign active status"""
+    try:
+        return campaign_service.toggle_campaign(db, campaign_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 @router.get("/countries", response_model=List[str])
 def get_available_countries():
