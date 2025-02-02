@@ -1,5 +1,6 @@
 import json
 import os
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -8,6 +9,8 @@ from models.models import Campaign as CampaignModel
 from schemas.schema import Campaign as CampaignSchema, CampaignCreate, Payout as PayoutSchema, PayoutCreate, PayoutUpdate
 from service.service import campaign_service, payout_service
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 class CampaignBase(BaseModel):
     country: Country  # Required
@@ -84,10 +87,13 @@ def toggle_campaign(campaign_id: int, db: Session = Depends(get_db)):
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-@router.get("/countries", response_model=List[str])
+@router.get("/countries", response_model=List[Country])
 def get_available_countries():
     """Get list of available country codes"""
-    return [country.value for country in Country]
+    # Get all country members from enum
+    countries = list(Country.__members__.values())
+    logger.info(f"Returning {len(countries)} countries")
+    return countries
 
 @router.get("/{campaign_id}/payouts", response_model=List[PayoutSchema])
 def get_campaign_payouts(campaign_id: int, db: Session = Depends(get_db)):
@@ -147,3 +153,22 @@ def delete_payout(payout_id: int, db: Session = Depends(get_db)):
         return {"message": "Payout deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+def load_countries():
+    try:
+        filepath = os.path.join(os.path.dirname(__file__), 'countries.json')
+        logger.info(f"Loading countries from: {filepath}")
+        
+        with open(filepath) as f:
+            data = json.load(f)
+            # Filter valid countries
+            countries = [
+                country for country in data['countries']
+                if country['COUNTRY_CODE'] and country['COUNTRY_CODE'] != "-"
+            ]
+            
+            logger.info(f"Loaded {len(countries)} valid countries")
+            return countries
+    except Exception as e:
+        logger.error(f"Failed to load countries: {e}")
+        raise

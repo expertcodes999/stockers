@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
 from models.models import Campaign, Payout
 from schemas.schema import CampaignCreate, Campaign as CampaignSchema, CampaignUpdate, PayoutCreate, PayoutUpdate
-from database.database import get_country_details, Country
+from database.database import Country
 from sqlalchemy import and_
 
 class CampaignService:
@@ -57,6 +57,8 @@ class CampaignService:
                 query = query.filter(Campaign.landing_url.ilike(f"%{filters['landing_url']}%"))
             if filters.get("is_running") is not None:
                 query = query.filter(Campaign.is_running == filters["is_running"])
+            if filters.get("country"):
+                query = query.filter(Campaign.country == filters["country"])
         
         return query.offset(skip).limit(limit).all()
 
